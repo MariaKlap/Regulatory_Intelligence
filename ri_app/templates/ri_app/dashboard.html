@@ -1,0 +1,92 @@
+<!-- ri_app/templates/ri_app/dashboard.html -->
+{% extends "ri_app/base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Regulatory Intelligence Dashboard</h1>
+        
+        <form method="get" class="mb-4">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <select name="agency" class="form-select">
+                        <option value="">All Agencies</option>
+                        {% for agency in agencies %}
+                        <option value="{{ agency }}" {% if request.GET.agency == agency %}selected{% endif %}>{{ agency }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {% if request.GET.category == category %}selected{% endif %}>{{ category }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="drug_name" class="form-select">
+                        <option value="">All Drugs</option>
+                        {% for drug in drug_names %}
+                        <option value="{{ drug }}" {% if request.GET.drug_name == drug %}selected{% endif %}>{{ drug }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-2">
+
+<button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="list-group">
+            {% for item in items %}
+            <a href="{% url 'detail' item.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ item.title }}</h5>
+                    <small>{{item.date|date:"d/m/Y" }}</small>
+                </div>
+                <p class="mb-1">{{ item.summary|truncatewords:30 }}</p>
+                <p><strong>Drug Name:</strong> {{ item.drug_name }}</p>
+                <small class="text-muted">{{ item.agency }} - {{ item.category }}</small>
+            </a>
+            {% empty %}
+            <div class="alert alert-info">No items found matching your criteria.</div>
+            {% endfor %}
+        </div>
+        
+        {% if is_paginated %}
+        <nav class="mt-4">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
