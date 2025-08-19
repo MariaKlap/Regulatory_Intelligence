@@ -1,0 +1,225 @@
+<!-- ri_app/templates/ri_app/dashboard.html -->
+{% extends "ri_app/base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Regulatory Intelligence Dashboard</h1>
+        
+        <form method="get" class="mb-4">
+            <div class="row g-2">
+                <!-- Date range filter (now col-md-1) -->
+                <div class="col-md-2">
+                    <input 
+                        type="text" 
+                        class="form-control date-range" 
+                        placeholder="Publishing Date (dd/mm/yyyy)" 
+                        name="date_range"
+                        data-mode="range"
+                        data-date-format="Y-m-d"
+                        value="{{ request.GET.date_range }}"
+                    >
+                </div>
+                
+                <!-- Product Type filter (now col-md-1) -->
+                <div class="col-md-2">
+                    <select name="product_type" class="form-select">
+                        <option value="">All Product Types</option>
+                        {% if product_types %}
+                            {% for product_type in product_types %}
+                            <option value="{{ product_type }}" 
+                                    {% if selected_product_type == product_type %}selected{% endif %}>
+                                {{ product_type }}
+                            </option>
+                            {% endfor %}
+                        {% else %}
+                            <option disabled>No product types available</option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                <!-- Document Type filter (now col-md-2) -->
+                <div class="col-md-2">
+                    <select name="document_type" class="form-select">
+                        <option value="">All Document Types</option>
+                        {% if document_types %}
+                            {% for document_type in document_types %}
+                            <option value="{{ document_type }}" 
+                                    {% if selected_document_type == document_type %}selected{% endif %}>
+                                {{ document_type }}
+                            </option>
+                            {% endfor %}
+                        {% else %}
+                            <option disabled>No document types available</option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                <!-- Drug Name filter (now col-md-2) -->
+                <div class="col-md-2">
+                    <select name="drug_name" class="form-select">
+                        <option value="">All Drugs</option>
+                        {% if drug_names %}
+                            {% for drug in drug_names %}
+                            <option value="{{ drug }}" 
+                                    {% if selected_drug_name == drug %}selected{% endif %}>
+                                {{ drug }}
+                            </option>
+                            {% endfor %}
+                        {% else %}
+                            <option disabled>No drugs available</option>
+                        {% endif %}
+                    </select>
+                </div>
+                
+                <!-- Viewed Status filter (new col-md-1) -->
+                <div class="col-md-1">
+                    <select name="viewed" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="read" {% if selected_viewed == 'read' %}selected{% endif %}>Read</option>
+                        <option value="unread" {% if selected_viewed == 'unread' %}selected{% endif %}>Unread</option>
+                    </select>
+                </div>
+                
+                <!-- Search box (expanded to col-md-2) -->
+                <div class="col-md-2">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        class="form-control" 
+                        placeholder="Search..." 
+                        value="{{ request.GET.search }}"
+                    >
+                </div>
+                
+                <!-- Filter button (col-md-1) -->
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="list-group">
+            {% for item in items %}
+            <a href="{% url 'detail' item.pk %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">
+                        <span class="viewed-toggle" data-item-id="{{ item.id }}" style="cursor: pointer;">
+                            {% if item.viewed %}
+                                <i class="bi bi-eye-fill text-danger me-2" title="Mark as unread"></i>
+                            {% else %}
+                                <i class="bi bi-eye me-2" title="Mark as read"></i>
+                            {% endif %}
+                        </span>
+                        {{ item.title }}
+                    </h5>
+                    <small>{{item.date|date:"d/m/Y" }}</small>
+                </div>
+                <p class="mb-1">{{ item.summary|truncatewords:30 }}</p>
+                <p><strong>Drug Name:</strong> {{ item.Drug_names }}</p>
+                <small class="text-muted">{{ item.Product_Type }} - {{ item.Document_Type }}</small>
+            </a>
+            {% empty %}
+            <div class="alert alert-info">No items found matching your criteria.</div>
+            {% endfor %}
+        </div>
+        
+        {% if is_paginated %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <!-- First Page («) -->
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&laquo;</span>
+                    </li>
+                {% endif %}
+
+                <!-- Previous Page (<) -->
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&lt;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&lt;</span>
+                    </li>
+                {% endif %}
+
+                <!-- Page Numbers (1 2 3 4 5) -->
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Next Page (>) -->
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&gt;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&gt;</span>
+                    </li>
+                {% endif %}
+
+                <!-- Last Page (») -->
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Parse the existing date range if present
+        var defaultDates = null;
+        {% if request.GET.date_range %}
+            defaultDates = "{{ request.GET.date_range }}".split(' to ');
+            // Convert to proper format (YYYY-MM-DD)
+            if (defaultDates.length === 2) {
+                defaultDates = defaultDates.map(dateStr => {
+                    // Handle both possible formats that might come from server
+                    const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
+                    return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                });
+            }
+        {% endif %}
+
+        flatpickr(".date-range", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            altFormat: "d/m/Y",
+            altInput: true,
+            static: true,
+            monthSelectorType: "dropdown",
+            locale: "default",
+            defaultDate: defaultDates
+        });
+    });
+</script>
+    {% endblock %}
